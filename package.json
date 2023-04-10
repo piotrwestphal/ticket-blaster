@@ -5,23 +5,27 @@
     "ticket-blaster": "bin/ticket-blaster.js"
   },
   "scripts": {
+    "install_html_parser": "cd layers/html-parser/nodejs/node_modules/html-parser && npm install",
+    "postinstall": "(npm run install_html_parser);",
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk"
   },
-  "devDependencies": {
-    "@types/jest": "^29.4.0",
-    "@types/node": "18.11.18",
-    "aws-cdk": "2.63.0",
-    "jest": "^29.4.1",
-    "ts-jest": "^29.0.5",
-    "ts-node": "^10.9.1",
-    "typescript": "~4.9.4"
-  },
   "dependencies": {
-    "aws-cdk-lib": "^2.63.0",
-    "constructs": "^10.0.0",
-    "source-map-support": "^0.5.21"
+    "aws-cdk-lib": "2.73.0",
+    "constructs": "10.1.304",
+    "source-map-support": "0.5.21"
+  },
+  "devDependencies": {
+    "@aws-sdk/util-dynamodb": "3.306.0",
+    "@aws-sdk/client-dynamodb": "3.306.0",
+    "@types/jest": "29.5.0",
+    "@types/node": "18.15.11",
+    "aws-cdk": "2.73.0",
+    "jest": "29.5.0",
+    "ts-jest": "29.1.0",
+    "ts-node": "10.9.1",
+    "typescript": "5.0.3"
   }
 }
