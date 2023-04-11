@@ -5,13 +5,13 @@ type BaseEntity = Readonly<{
     [TableAttr.PK]: PkValue
     [TableAttr.SK]: string          // event name
     createdAt: number
-    updatedAt: number
 }>
 
 export type EventEntity = Readonly<{
     [TableAttr.PK]: PkValue.EVENT
     link: string
     activated: boolean
+    updatedAt: number
 }> & BaseEntity
 
 export type TicketItem = Readonly<{

@@ -6,6 +6,7 @@ import {PkValue, TableAttr} from '../../consts'
 import {EventEntity, SeatsEntity} from '../../types'
 import {ScheduledEvent, SearchSeats} from './search.types'
 import {dynamoMaxBatchItemsLimit, splitIntoChunks} from './utils'
+import {detectChanges, DetectedChanges} from './change-detector'
 
 const tableName = process.env.TABLE_NAME as string
 const topicArn = process.env.SNS_TOPIC_ARN as string
@@ -49,19 +50,36 @@ export const handler = async (_: ScheduledEvent) => {
         const pendingGetRequests = getRequestsInChunks.map(chunk =>
             dbClient.send(new BatchGetItemCommand({RequestItems: {[tableName]: {Keys: chunk}}})))
 
+        const previousSeatsEntities = [] as SeatsEntity[]
+
         for await (const pendingChunk of pendingGetRequests) {
-            const result = await pendingChunk
-            // group by event
+            const getResult = await pendingChunk
+            const items = (getResult.Responses?.[tableName] || []).map(v => unmarshall(v) as SeatsEntity)
+            previousSeatsEntities.push(...items)
         }
 
-        // TODO: Change detection and send sns
+        const previousSeatsEntitiesByEvent = new Map(previousSeatsEntities.map(v => [v.event, v]))
 
-        /*const result = await snsClient.send(new PublishCommand({
-            TopicArn: topicArn,
-            Message: 'Hello from SNS Topic',
-            Subject: 'Free seats changed'
-        }))
-        console.log('[SNS RESULT]', result)*/
+        const detectedChanges = new Map<string, DetectedChanges>()
+        currentSeatsEntities.forEach(curr => {
+            if (previousSeatsEntitiesByEvent.has(curr.event)) {
+                const result = detectChanges(previousSeatsEntitiesByEvent.get(curr.event) as SeatsEntity, curr)
+                detectedChanges.set(curr.event, result)
+            }
+        })
+
+        if (detectedChanges.size) {
+            console.log('[DETECTED CHANGES]')
+            detectedChanges.forEach((v, k) => {
+                console.log(`Changes for ${k}:`, v)
+            })
+            const result = await snsClient.send(new PublishCommand({
+                TopicArn: topicArn,
+                Message: composeMessage(detectedChanges),
+                Subject: '[Ticket Blaster] Change detected'
+            }))
+            console.log('[RESULT]', result)
+        }
 
         const itemsToCreate = currentSeatsEntities.map(v => marshall(v)).map(Item => ({PutRequest: {Item}}))
         const putRequestsInChunks = splitIntoChunks(itemsToCreate, dynamoMaxBatchItemsLimit)
@@ -109,5 +127,15 @@ const toEntity = ({
         link: buyTicketLink,
     })),
     createdAt: now,
-    updatedAt: now
 })
+
+const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string => {
+    const eventMessages = Array.from(detectedChanges.entries()).map(([key, val]) =>
+        `Changes for event ${key}:\n` +
+        `Sum of changes ${val.sum}\n` +
+        `Missing seats for ${val.miss.join(', ')}\n` +
+        `Additional seats for ${val.add.join(', ')}\n` +
+        `Detected changes for seats ${val.diff.join(', ')}\n`
+    )
+    return `Detected changes:\n\n` + eventMessages.join('\n\n')
+}

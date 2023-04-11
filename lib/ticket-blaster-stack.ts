@@ -18,6 +18,7 @@ export class TicketBlasterStack extends cdk.Stack {
         super(scope, id, props)
 
         const subscriptionEmails = this.node.tryGetContext('emails') as string[]
+        // TODO: add ttl for seats entities for automatic removal
         const table = new Table(this, 'Table', {
             partitionKey: {
                 name: TableAttr.PK,
