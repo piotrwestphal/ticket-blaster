@@ -1,4 +1,5 @@
-import {BatchWriteItemCommand, DynamoDBClient, QueryCommand} from '@aws-sdk/client-dynamodb'
+import {BatchGetItemCommand, BatchWriteItemCommand, DynamoDBClient, QueryCommand} from '@aws-sdk/client-dynamodb'
+import {PublishCommand, SNSClient} from '@aws-sdk/client-sns'
 import {parse, ParserElement, ParserType} from 'html-parser'
 import {marshall, unmarshall} from '@aws-sdk/util-dynamodb'
 import {PkValue, TableAttr} from '../../consts'
@@ -7,9 +8,12 @@ import {ScheduledEvent, SearchSeats} from './search.types'
 import {dynamoMaxBatchItemsLimit, splitIntoChunks} from './utils'
 
 const tableName = process.env.TABLE_NAME as string
+const topicArn = process.env.SNS_TOPIC_ARN as string
 const region = process.env.AWS_REGION as string
 
 const dbClient = new DynamoDBClient({region})
+const snsClient = new SNSClient({region})
+
 export const handler = async (_: ScheduledEvent) => {
     const now = Date.now()
     try {
@@ -38,10 +42,28 @@ export const handler = async (_: ScheduledEvent) => {
         const eventBySeats = activatedEvents.map(({event}, idx) => ({event, items: seatsGroups[idx]}))
 
         console.log(`Creating [${eventBySeats.length}] seats entities with the following keys:`, eventBySeats.map(v => v.event))
-        const itemsToCreate = eventBySeats
-            .map(v => toEntity(v, now))
-            .map(v => marshall(v))
-            .map(Item => ({PutRequest: {Item}}))
+        const currentSeatsEntities = eventBySeats.map(v => toEntity(v, now))
+
+        const keysToGet = currentSeatsEntities.map(v => ({type: PkValue.SEATS, event: v.event})).map(v => marshall(v))
+        const getRequestsInChunks = splitIntoChunks(keysToGet, dynamoMaxBatchItemsLimit)
+        const pendingGetRequests = getRequestsInChunks.map(chunk =>
+            dbClient.send(new BatchGetItemCommand({RequestItems: {[tableName]: {Keys: chunk}}})))
+
+        for await (const pendingChunk of pendingGetRequests) {
+            const result = await pendingChunk
+            // group by event
+        }
+
+        // TODO: Change detection and send sns
+
+        /*const result = await snsClient.send(new PublishCommand({
+            TopicArn: topicArn,
+            Message: 'Hello from SNS Topic',
+            Subject: 'Free seats changed'
+        }))
+        console.log('[SNS RESULT]', result)*/
+
+        const itemsToCreate = currentSeatsEntities.map(v => marshall(v)).map(Item => ({PutRequest: {Item}}))
         const putRequestsInChunks = splitIntoChunks(itemsToCreate, dynamoMaxBatchItemsLimit)
         const pendingPutRequests = putRequestsInChunks.map(chunk =>
             dbClient.send(new BatchWriteItemCommand({RequestItems: {[tableName]: chunk}})))
