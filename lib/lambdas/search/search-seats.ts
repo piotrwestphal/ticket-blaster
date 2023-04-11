@@ -42,7 +42,6 @@ export const handler = async (_: ScheduledEvent) => {
         const seatsGroups = searchSeatsResults.map($ => $('div.termin').toArray().map(el => extractData($, el)))
         const eventBySeats = activatedEvents.map(({event}, idx) => ({event, items: seatsGroups[idx]}))
 
-        console.log(`Creating [${eventBySeats.length}] seats entities with the following keys:`, eventBySeats.map(v => v.event))
         const currentSeatsEntities = eventBySeats.map(v => toEntity(v, now))
 
         const keysToGet = currentSeatsEntities.map(v => ({type: PkValue.SEATS, event: v.event})).map(v => marshall(v))
@@ -64,7 +63,9 @@ export const handler = async (_: ScheduledEvent) => {
         currentSeatsEntities.forEach(curr => {
             if (previousSeatsEntitiesByEvent.has(curr.event)) {
                 const result = detectChanges(previousSeatsEntitiesByEvent.get(curr.event) as SeatsEntity, curr)
-                detectedChanges.set(curr.event, result)
+                if (result.sum) {
+                    detectedChanges.set(curr.event, result)
+                }
             }
         })
 
@@ -81,6 +82,7 @@ export const handler = async (_: ScheduledEvent) => {
             console.log('[RESULT]', result)
         }
 
+        console.log(`Creating [${eventBySeats.length}] seats entities with the following keys:`, eventBySeats.map(v => v.event))
         const itemsToCreate = currentSeatsEntities.map(v => marshall(v)).map(Item => ({PutRequest: {Item}}))
         const putRequestsInChunks = splitIntoChunks(itemsToCreate, dynamoMaxBatchItemsLimit)
         const pendingPutRequests = putRequestsInChunks.map(chunk =>
@@ -130,12 +132,30 @@ const toEntity = ({
 })
 
 const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string => {
-    const eventMessages = Array.from(detectedChanges.entries()).map(([key, val]) =>
-        `Changes for event ${key}:\n` +
-        `Sum of changes ${val.sum}\n` +
-        `Missing seats for ${val.miss.join(', ')}\n` +
-        `Additional seats for ${val.add.join(', ')}\n` +
-        `Detected changes for seats ${val.diff.join(', ')}\n`
-    )
+    const eventMessages = Array.from(detectedChanges.entries())
+        .map(([key, val]) => {
+                const messages = [`Changes for event ${key}:`]
+                messages.push(`Sum of changes ${val.sum}`)
+                if (val.miss.length) {
+                    val.miss.forEach(v => {
+                        messages.push(`Missing seats for ${v.date} ${v.time}`)
+                    })
+                }
+                if (val.add.length) {
+                    val.add.forEach(v => {
+                        messages.push(`Additional seats for ${v.date} ${v.time}`)
+                    })
+                }
+                if (val.diff.length) {
+                    messages.push(`Detected changes for seats ${val.diff.join(', ')}`)
+                    val.diff.forEach(v => {
+                        messages.push(`Detected changes for seats for ${v.curr.date} ${v.curr.time}`)
+                        messages.push(`Previous value - ${v.prev.seats}`)
+                        messages.push(`Current value - ${v.curr.seats}`)
+                    })
+                }
+                return messages.join('\n')
+            }
+        )
     return `Detected changes:\n\n` + eventMessages.join('\n\n')
 }

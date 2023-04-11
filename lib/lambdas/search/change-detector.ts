@@ -5,7 +5,7 @@ type ComparedItem = TicketItem & { id: string }
 export type DetectedChanges = Readonly<{
     add: TicketItem[]
     miss: TicketItem[]
-    diff: TicketItem[]
+    diff: { prev: TicketItem, curr: TicketItem }[]
     sum: number
 }>
 export const detectChanges = (prevEntity: SeatsEntity,
@@ -20,16 +20,16 @@ export const detectChanges = (prevEntity: SeatsEntity,
         .map(v => ({...v, id: toCompareId(v)} as ComparedItem))
         .filter(v => !currItemsById.has(v.id))
 
-    const differences = [] as TicketItem[]
+    const differences = [] as DetectedChanges['diff']
     const additional = [] as TicketItem[]
 
     currEntity.items.map(v => ({...v, id: toCompareId(v)} as ComparedItem))
         .forEach(curr => {
             const {id, seats} = curr
             if (prevItemsById.has(id)) {
-                const {seats: prevSeats} = prevItemsById.get(id) as TicketItem
-                if (seats !== prevSeats) {
-                    differences.push(curr)
+                const prev = prevItemsById.get(id) as TicketItem
+                if (seats !== prev.seats) {
+                    differences.push({curr, prev})
                 }
             } else {
                 additional.push(curr)
