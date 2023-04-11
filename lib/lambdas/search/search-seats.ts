@@ -135,7 +135,6 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
     const eventMessages = Array.from(detectedChanges.entries())
         .map(([key, val]) => {
                 const messages = [`${key}:`]
-                messages.push(`Sum of changes ${val.sum}`)
                 if (val.miss.length) {
                     val.miss.forEach(v => {
                         messages.push(`+ Missing seats for ${v.date} ${v.time}`)
@@ -147,9 +146,9 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
                     })
                 }
                 if (val.diff.length) {
-                    messages.push(`+ Detected changes for seats:`)
+                    messages.push(`+ Seats changes:`)
                     val.diff.forEach(v => {
-                        messages.push(`>> ${v.curr.date} ${v.curr.time} <<`)
+                        messages.push(`> ${v.curr.date} ${v.curr.time}`)
                         messages.push(`Previous - ${v.prev.seats}`)
                         messages.push(`Current - ${v.curr.seats}`)
                     })
@@ -157,5 +156,5 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
                 return messages.join('\n')
             }
         )
-    return `Detected changes:\n` + eventMessages.join('\n\n')
+    return `Detected changes:\n\n` + eventMessages.join('\n\n')
 }
