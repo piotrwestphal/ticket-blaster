@@ -134,28 +134,28 @@ const toEntity = ({
 const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string => {
     const eventMessages = Array.from(detectedChanges.entries())
         .map(([key, val]) => {
-                const messages = [`Changes for event ${key}:`]
+                const messages = [`${key}:`]
                 messages.push(`Sum of changes ${val.sum}`)
                 if (val.miss.length) {
                     val.miss.forEach(v => {
-                        messages.push(`Missing seats for ${v.date} ${v.time}`)
+                        messages.push(`+ Missing seats for ${v.date} ${v.time}`)
                     })
                 }
                 if (val.add.length) {
                     val.add.forEach(v => {
-                        messages.push(`Additional seats for ${v.date} ${v.time}`)
+                        messages.push(`+ Additional seats for ${v.date} ${v.time}`)
                     })
                 }
                 if (val.diff.length) {
-                    messages.push(`Detected changes for seats ${val.diff.join(', ')}`)
+                    messages.push(`+ Detected changes for seats:`)
                     val.diff.forEach(v => {
-                        messages.push(`Detected changes for seats for ${v.curr.date} ${v.curr.time}`)
-                        messages.push(`Previous value - ${v.prev.seats}`)
-                        messages.push(`Current value - ${v.curr.seats}`)
+                        messages.push(`>> ${v.curr.date} ${v.curr.time} <<`)
+                        messages.push(`Previous - ${v.prev.seats}`)
+                        messages.push(`Current - ${v.curr.seats}`)
                     })
                 }
                 return messages.join('\n')
             }
         )
-    return `Detected changes:\n\n` + eventMessages.join('\n\n')
+    return `Detected changes:\n` + eventMessages.join('\n\n')
 }
