@@ -159,5 +159,5 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
                 return messages.join('\n')
             }
         )
-    return `Detected changes:\n\n` + eventMessages.join('\n\n') + `\n\nBest regards,\nTicket Blaster Team`
+    return `Detected changes:\n\n` + eventMessages.join('\n\n') + `\n\n\nBest regards,\nTicket Blaster Team`
 }
