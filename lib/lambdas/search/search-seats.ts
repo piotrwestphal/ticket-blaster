@@ -153,11 +153,13 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
                         messages.push(`> ${v.curr.date} ${v.curr.time}`)
                         messages.push(`Previous - ${v.prev.seats}`)
                         messages.push(`Current - ${v.curr.seats}`)
-                        messages.push(`Link: ${v.curr.link}`)
+                        if (v.curr.link) {
+                            messages.push(`Link: ${v.curr.link}`)
+                        }
                     })
                 }
                 return messages.join('\n')
             }
         )
-    return `Detected changes:\n\n` + eventMessages.join('\n\n') + `\n\n\nBest regards,\nTicket Blaster Team`
+    return `Detected changes:\n\n` + eventMessages.join('\n\n') + `\n\nBest regards,\nTicket Blaster Team`
 }
