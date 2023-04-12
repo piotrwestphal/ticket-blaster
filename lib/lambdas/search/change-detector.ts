@@ -13,8 +13,6 @@ export const detectChanges = (prevEntity: SeatsEntity,
                               freeSeatsThreshold: number = 0): DetectedChanges => {
     const prevItemsById = new Map(prevEntity.items.map(v => toEntry(v)))
     const currItemsById = new Map(currEntity.items.map(v => toEntry(v)))
-    console.log('PREV', prevItemsById)
-    console.log('CURR', currItemsById)
 
     const missing = prevEntity.items
         .map(v => ({...v, id: toCompareId(v)} as ComparedItem))

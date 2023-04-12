@@ -138,11 +138,13 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
                 if (val.miss.length) {
                     val.miss.forEach(v => {
                         messages.push(`+ Missing seats for ${v.date} ${v.time}`)
+                        messages.push(`Link: ${v.link}`)
                     })
                 }
                 if (val.add.length) {
                     val.add.forEach(v => {
                         messages.push(`+ Additional seats for ${v.date} ${v.time}`)
+                        messages.push(`Link: ${v.link}`)
                     })
                 }
                 if (val.diff.length) {
@@ -151,10 +153,11 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
                         messages.push(`> ${v.curr.date} ${v.curr.time}`)
                         messages.push(`Previous - ${v.prev.seats}`)
                         messages.push(`Current - ${v.curr.seats}`)
+                        messages.push(`Link: ${v.curr.link}`)
                     })
                 }
                 return messages.join('\n')
             }
         )
-    return `Detected changes:\n\n` + eventMessages.join('\n\n')
+    return `Detected changes:\n\n` + eventMessages.join('\n\n') + `\n\nBest regards,\nTicket Blaster Team`
 }

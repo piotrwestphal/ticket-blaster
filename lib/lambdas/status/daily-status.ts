@@ -30,10 +30,11 @@ export const handler = async (_: ScheduledEvent) => {
         const result = await snsClient.send(new PublishCommand({
             TopicArn: topicArn,
             Message: `The following events are available:\n${events.map(v => v.event).join(',\n')}\n` +
-                `The following events are activated:\n${events.filter(v => v.activated).map(v => v.event).join(', ')}\n` +
-                `Best regards,\nTicket Blaster Team`,
+                `\nThe following events are activated:\n${events.filter(v => v.activated).map(v => v.event).join(', ')}\n` +
+                `\nBest regards,\nTicket Blaster Team`,
             Subject: '[Ticket Blaster] Daily status'
         }))
+        console.log('[RESULT]', result)
 
         return {
             statusCode: 200
