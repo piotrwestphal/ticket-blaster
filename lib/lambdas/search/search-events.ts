@@ -100,6 +100,7 @@ const toEntity = ({
     [TableAttr.SK]: title,
     link,
     activated: false,
+    includedDates: [],
     createdAt: now,
     updatedAt: now,
 })
