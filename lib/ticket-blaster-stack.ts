@@ -18,6 +18,7 @@ export class TicketBlasterStack extends cdk.Stack {
         super(scope, id, props)
 
         const subscriptionEmails = this.node.tryGetContext('emails') as string[]
+
         // TODO: add ttl for seats entities for automatic removal
         const table = new Table(this, 'Table', {
             partitionKey: {
@@ -41,15 +42,15 @@ export class TicketBlasterStack extends cdk.Stack {
         const htmlParserLayer = {
             ver: new LayerVersion(this, 'HtmlParserLayer', {
                 code: Code.fromAsset(join('layers', 'html-parser')),
-                description: 'AWS client',
-                compatibleRuntimes: [Runtime.NODEJS_18_X],
+                description: 'Html parser layer',
+                compatibleRuntimes: [Runtime.NODEJS_22_X],
                 removalPolicy: RemovalPolicy.DESTROY
             }),
             module: 'html-parser'
         } satisfies LayerDef
 
         const commonLambdaProps = {
-            runtime: Runtime.NODEJS_18_X,
+            runtime: Runtime.NODEJS_22_X,
             bundling: {
                 externalModules: [htmlParserLayer.module, '@aws-sdk']
             },

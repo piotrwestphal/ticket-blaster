@@ -1,12 +1,12 @@
 import {BatchGetItemCommand, BatchWriteItemCommand, DynamoDBClient, QueryCommand} from '@aws-sdk/client-dynamodb'
 import {PublishCommand, SNSClient} from '@aws-sdk/client-sns'
-import {parse, ParserElement, ParserType} from 'html-parser'
 import {marshall, unmarshall} from '@aws-sdk/util-dynamodb'
+import {parse, ParserElement, ParserType} from 'html-parser'
 import {PkValue, TableAttr} from '../../consts'
 import {EventEntity, SeatsEntity} from '../../types'
+import {detectChanges, DetectedChanges} from './change-detector'
 import {ScheduledEvent, SearchSeats} from './search.types'
 import {dynamoMaxBatchItemsLimit, splitIntoChunks} from './utils'
-import {detectChanges, DetectedChanges} from './change-detector'
 
 const tableName = process.env.TABLE_NAME as string
 const topicArn = process.env.SNS_TOPIC_ARN as string
@@ -29,18 +29,24 @@ export const handler = async (_: ScheduledEvent) => {
                 '#pk': TableAttr.PK,
                 '#f0': 'activated',
             },
-            FilterExpression: `#f0 = :f0`
+            FilterExpression: `#f0 = :f0`,
         }))
 
         const activatedEvents = (activatedEventsResult.Items || []).map(v => unmarshall(v) as EventEntity)
         if (!activatedEvents.length) {
             return {
-                statusCode: 200
+                statusCode: 200,
             }
         }
         const searchSeatsResults = await Promise.all(activatedEvents.map(v => parse(v.link)))
         const seatsGroups = searchSeatsResults.map($ => $('div.termin').toArray().map(el => extractData($, el)))
-        const eventBySeats = activatedEvents.map(({event}, idx) => ({event, items: seatsGroups[idx]}))
+        const filteredSeatsGroups = seatsGroups.map(((seatsGroup, idx) =>
+            seatsGroup.filter(seats =>
+                activatedEvents[idx].includedDates && activatedEvents[idx].includedDates.length > 0
+                    ? activatedEvents[idx].includedDates.includes(seats.date)
+                    : true)))
+        console.log('Filtered seats groups:', filteredSeatsGroups)
+        const eventBySeats = activatedEvents.map(({event}, idx) => ({event, items: filteredSeatsGroups[idx]}))
 
         const currentSeatsEntities = eventBySeats.map(v => toEntity(v, now))
 
@@ -52,8 +58,7 @@ export const handler = async (_: ScheduledEvent) => {
         const previousSeatsEntities = [] as SeatsEntity[]
 
         for await (const pendingChunk of pendingGetRequests) {
-            const getResult = await pendingChunk
-            const items = (getResult.Responses?.[tableName] || []).map(v => unmarshall(v) as SeatsEntity)
+            const items = (pendingChunk.Responses?.[tableName] || []).map(v => unmarshall(v) as SeatsEntity)
             previousSeatsEntities.push(...items)
         }
 
@@ -77,7 +82,7 @@ export const handler = async (_: ScheduledEvent) => {
             const result = await snsClient.send(new PublishCommand({
                 TopicArn: topicArn,
                 Message: composeMessage(detectedChanges),
-                Subject: '[Ticket Blaster] Change detected'
+                Subject: '[Ticket Blaster] Change detected',
             }))
             console.log('[RESULT]', result)
         }
@@ -93,21 +98,21 @@ export const handler = async (_: ScheduledEvent) => {
         }
         console.log(`Successfully created [${eventBySeats.length}] seats`)
         return {
-            statusCode: 200
+            statusCode: 200,
         }
     } catch (err) {
         console.error('Error during searching seats', err)
         return {
-            statusCode: 500
+            statusCode: 500,
         }
     }
 }
 
 const extractData = ($: ParserType, el: ParserElement) => ({
-    date: $(el).find('div.data').text(),
+    date: $(el).find('div.data').text().replace(/ /g, ''),
     time: $(el).find('div.godzina').text(),
     freeSeats: $(el).find('div.wolne').text(),
-    buyTicketLink: $(el).find('div.text-right').find('a').attr('href') as string
+    buyTicketLink: $(el).find('div.text-right').find('a').attr('href') as string,
 })
 
 const toEntity = ({
@@ -121,9 +126,9 @@ const toEntity = ({
                           time,
                           freeSeats,
                           date,
-                          buyTicketLink
+                          buyTicketLink,
                       }) => ({
-        date,
+        date: date.replace(/ /g, ''),
         time,
         seats: freeSeats,
         link: buyTicketLink,
@@ -159,7 +164,7 @@ const composeMessage = (detectedChanges: Map<string, DetectedChanges>): string =
                     })
                 }
                 return messages.join('\n')
-            }
+            },
         )
     return `Detected changes:\n\n` + eventMessages.join('\n\n') + `\n\nBest regards,\nTicket Blaster Team`
 }

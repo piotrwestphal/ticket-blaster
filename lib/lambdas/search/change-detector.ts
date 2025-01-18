@@ -9,8 +9,7 @@ export type DetectedChanges = Readonly<{
     sum: number
 }>
 export const detectChanges = (prevEntity: SeatsEntity,
-                              currEntity: SeatsEntity,
-                              freeSeatsThreshold: number = 0): DetectedChanges => {
+                              currEntity: SeatsEntity): DetectedChanges => {
     const prevItemsById = new Map(prevEntity.items.map(v => toEntry(v)))
     const currItemsById = new Map(currEntity.items.map(v => toEntry(v)))
 

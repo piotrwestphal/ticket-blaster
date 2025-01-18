@@ -11,6 +11,7 @@ export type EventEntity = Readonly<{
     [TableAttr.PK]: PkValue.EVENT
     link: string
     activated: boolean
+    includedDates: string[]
     updatedAt: number
 }> & BaseEntity
 
