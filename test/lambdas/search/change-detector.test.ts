@@ -10,19 +10,19 @@ describe('Change detector', () => {
             createdAt: 1681207214216,
             items: [
                 {
-                    date: "24 / 05 / 2023",
+                    date: "24/05/2023",
                     link: "",
                     seats: "Liczba miejsc: 0",
                     time: "Godz.13:00"
                 },
                 {
-                    date: "26 / 05 / 2023",
+                    date: "26/05/2023",
                     link: "",
                     seats: "Liczba miejsc: 0",
                     time: "Godz.11:00"
                 },
                 {
-                    date: "28 / 05 / 2023",
+                    date: "28/05/2023",
                     link: "",
                     seats: "Liczba miejsc: 0",
                     time: "Godz.12:00"
@@ -35,19 +35,19 @@ describe('Change detector', () => {
             createdAt: 1681207214216,
             items: [
                 {
-                    date: "23 / 05 / 2023",
+                    date: "23/05/2023",
                     link: "",
                     seats: "Liczba miejsc: 0",
                     time: "Godz.13:00"
                 },
                 {
-                    date: "26 / 05 / 2023",
+                    date: "26/05/2023",
                     link: "",
                     seats: "Liczba miejsc: 0",
                     time: "Godz.11:00"
                 },
                 {
-                    date: "28 / 05 / 2023",
+                    date: "28/05/2023",
                     link: "https://address.com",
                     seats: "Liczba miejsc: 1",
                     time: "Godz.12:00"
