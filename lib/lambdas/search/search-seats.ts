@@ -93,9 +93,7 @@ export const handler = async (_: ScheduledEvent) => {
         const pendingPutRequests = putRequestsInChunks.map(chunk =>
             dbClient.send(new BatchWriteItemCommand({RequestItems: {[tableName]: chunk}})))
 
-        for await (const pendingChunk of pendingPutRequests) {
-            await pendingChunk
-        }
+        await Promise.all(pendingPutRequests)
         console.log(`Successfully created [${eventBySeats.length}] seats`)
         return {
             statusCode: 200,
